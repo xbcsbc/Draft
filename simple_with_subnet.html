@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <style>
-
     .links line {
         stroke: #999;
         stroke-opacity: 0.6;
@@ -11,11 +10,19 @@
         stroke: #fff;
         stroke-width: 1.5px;
     }
-
 </style>
-<svg width="960" height="600"></svg>
-<table id="table"></table>
+<table>
+    <tr>
+        <td>
+            <svg width="960" height="600"></svg>
+        </td>
+        <td>
+            <pre id="table"></pre>
+        </td>
+    </tr>
+</table>
 <script src="script/d3.v4.js"></script>
+<script src="script/jquery.min.js"></script>
 <script>
 
     var svg = d3.select("svg"),
@@ -40,9 +47,10 @@
         "links": []
     };
 
+    var nodeColor = new Array(48)
+
     var graphs = new Array(5);
-    for(let i = 0; i < M + N; i++)
-    {
+    for (let i = 0; i < M + N; i++) {
         graphs.push(graph);
     }
 
@@ -50,25 +58,25 @@
     var N = 48;
 
     // node
-    for(let i = 0; i < M + N; i++)
-    {
-        graph.nodes.push({id: i, group: 0, power: Math.random() * 8 + 3, is_attacked: false});
+    for (let i = 0; i < M + N; i++) {
+        nodeColor[i] = "#A6ECAB";
+        graph.nodes.push({ id: i, group: 0, power: Math.random() * 8 + 3, is_attacked: false });
     }
 
     // link
-    for(let i = 0; i < M + N; i++){
+    for (let i = 0; i < M + N; i++) {
         let aUsed = [];
-        for(let j = 0; j < 4; j++){
+        for (let j = 0; j < 4; j++) {
             let r = Math.floor((Math.random() * (M + N)) % (M + N + 1));
-            while(graph.nodes[r] in aUsed || r === i)	r = Math.floor((Math.random() * (M + N)) % (M + N + 1));
+            while (graph.nodes[r] in aUsed || r === i) r = Math.floor((Math.random() * (M + N)) % (M + N + 1));
             aUsed.push(graph.nodes[r]);
-            graph.links.push({source: i, target: r, value: 10, is_bad: false});
+            graph.links.push({ source: i, target: r, value: 10, is_bad: false });
         }
     }
 
 
     var simulation = d3.forceSimulation()
-        .force("link", d3.forceLink().id(function(d) { return d.id; }).strength(0).distance(100))
+        .force("link", d3.forceLink().id(function (d) { return d.id; }).strength(0).distance(100))
         .force("chcenterarge", d3.forceManyBody())
         .force("", d3.forceCenter(width / 2, height / 2))
         .force("collision", d3.forceCollide(function (d) { return d.power; }))
@@ -96,8 +104,8 @@
         })
         .attr("fill", function (d, i) {
             return d.is_attacked ? "#FFCC33" : "#A6ECAB";
-        } )
-        .attr("id", function(d) {return 'node' + d.id;})
+        })
+        .attr("id", function (d) { return 'node' + d.id; })
         .on("click", beAttacked)
         .on("mouseover", mouseover)
         .on("mouseout", mouseout)
@@ -115,20 +123,20 @@
 
     function ticked() {
         link
-            .attr("x1", function(d) { return d.source.x; })
-            .attr("y1", function(d) { return d.source.y; })
-            .attr("x2", function(d) { return d.target.x; })
-            .attr("y2", function(d) { return d.target.y; });
+            .attr("x1", function (d) { return d.source.x; })
+            .attr("y1", function (d) { return d.source.y; })
+            .attr("x2", function (d) { return d.target.x; })
+            .attr("y2", function (d) { return d.target.y; });
 
         node
-            .attr("cx", function(d) { return d.x; })
-            .attr("cy", function(d) { return d.y; });
+            .attr("cx", function (d) { return d.x; })
+            .attr("cy", function (d) { return d.y; });
 
         svg.selectAll('g.links').selectAll('line')
-            .attr("x1", function(d) { return d.source.x; })
-            .attr("y1", function(d) { return d.source.y; })
-            .attr("x2", function(d) { return d.target.x; })
-            .attr("y2", function(d) { return d.target.y; });
+            .attr("x1", function (d) { return d.source.x; })
+            .attr("y1", function (d) { return d.source.y; })
+            .attr("x2", function (d) { return d.target.x; })
+            .attr("y2", function (d) { return d.target.y; });
     }
 
     function dragstarted(d) {
@@ -149,12 +157,12 @@
     }
 
     function beAttacked(d, i) {
-        if(d.is_attacked)   return;
+        if (d.is_attacked) return;
+        nodeColor[i] = "#FFCC33";
         d3.select(this).attr("fill", "#FFCC33");
         d.is_attacked = true;
         graph.links.forEach(function (item, index, array) {
-            if(item.target.id === d.id)
-            {
+            if (item.target.id === d.id) {
                 item.is_bad = true;
                 d3.selectAll('#link' + item.source.id + 'to' + item.target.id).remove();
                 // .attr("style", "display:none;");
@@ -167,17 +175,15 @@
         });
         let cnt = 0;
         graph.nodes.forEach(function (item, index, array) {
-            if(cnt < 2 && item.is_attacked && item !== d)
-            {
-                if(Math.random() < 0.33)
-                {
-                    graph.links.push({source: d, target: item, value: 10, is_bad: false});
+            if (cnt < 2 && item.is_attacked && item !== d) {
+                if (Math.random() < 0.33) {
+                    graph.links.push({ source: d, target: item, value: 10, is_bad: false });
                     simulation.force("link")
                         .links(graph.links);
                     svg.selectAll('g.links')
                         .append('line')
-                        .datum({source: d, target: item, value: 10, is_bad: false})
-                        .attr("style","display:block;stroke:#FFCB6B")
+                        .datum({ source: d, target: item, value: 10, is_bad: false })
+                        .attr("style", "display:block;stroke:#FFCB6B")
                         .attr("id", 'link' + d.id + 'to' + item.id);
                     simulation.restart();
                     cnt += 1;
@@ -188,10 +194,26 @@
 
     function mouseover(d, i) {
         d3.select(this).attr("fill", "#FF0000");
+        //alert(i)
+        var node_info = graph.nodes[i]
+        var is_attacked = false;
+        var links = "";
+        if (node_info && node_info.is_attacked) {
+            is_attacked = true
+        }
+        for (var _i = 0; _i < graph.links.length; _i++) {
+            if (String(graph.links[_i].source.id) === String(i)) {
+                links += `${i} --> ${graph.links[_i].target.id}\n`
+            }
+            if (String(graph.links[_i].target.id) === String(i)) {
+                links += `${i} <-- ${graph.links[_i].source.id}\n`
+            }
+        }
+        $("#table").text("结点：" + i + " / " + (is_attacked ? "被攻击" : "未被攻击") + "\n" + links);
     }
 
     function mouseout(d, i) {
-        d3.select(this).attr("fill", "#00ff00");
+        d3.select(this).attr("fill", nodeColor[i]/*"#A6ECAB"*/);
     }
 
 </script>
