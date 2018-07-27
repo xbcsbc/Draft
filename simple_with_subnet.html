@@ -96,7 +96,8 @@
         } )
         .attr("id", function(d) {return 'node' + d.id;})
         .on("click", beAttacked)
-        .on("mouseover", hover)
+        .on("mouseover", mouseover)
+        .on("mouseout", mouseout)
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
@@ -182,8 +183,12 @@
         })
     }
 
-    function hover(d, i) {
+    function mouseover(d, i) {
         d3.select(this).attr("fill", "#FF0000");
+    }
+
+    function mouseout(d, i) {
+        d3.select(this).attr("fill", "#00ff00");
     }
 
 </script>
