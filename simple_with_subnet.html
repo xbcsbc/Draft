@@ -37,6 +37,12 @@
         "links": []
     };
 
+    var graphs = new Array(5);
+    for(let i = 0; i < M + N; i++)
+    {
+        graphs.push(graph);
+    }
+
     var M = 8;
     var N = 48;
 
@@ -49,7 +55,7 @@
     // link
     for(let i = 0; i < M + N; i++){
         let aUsed = [];
-        for(let j = 0; j < 8; j++){
+        for(let j = 0; j < 4; j++){
             let r = Math.floor((Math.random() * (M + N)) % (M + N + 1));
             while(graph.nodes[r] in aUsed || r === i)	r = Math.floor((Math.random() * (M + N)) % (M + N + 1));
             aUsed.push(graph.nodes[r]);
@@ -90,6 +96,7 @@
         } )
         .attr("id", function(d) {return 'node' + d.id;})
         .on("click", beAttacked)
+        .on("mouseover", hover)
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
@@ -173,6 +180,10 @@
                 }
             }
         })
+    }
+
+    function hover(d, i) {
+        d3.select(this).attr("fill", "#FF0000");
     }
 
 </script>
