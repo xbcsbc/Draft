@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <style>
-
     .links line {
         stroke: #999;
         stroke-opacity: 0.6;
@@ -11,7 +10,6 @@
         stroke: #fff;
         stroke-width: 1.5px;
     }
-
 </style>
 <table>
     <tr>
@@ -65,14 +63,13 @@
     var graphs = new Array(5);
     for (let i = 0; i < M + N; i++) {
         graphs.push(graph);
-
+    }
     let M = 0;
     let N = 48;
 
     let subnets = new Array(5);
-    for(let i = 0; i < 5; i++)
-    {
-        subnets[i] =  {
+    for (let i = 0; i < 5; i++) {
+        subnets[i] = {
             "nodes": [],
             "links": []
         };
@@ -90,16 +87,16 @@
         let useds = [];
         for (let j = 0; j < 4; j++) {
             let r = Math.floor((Math.random() * (M + N)) % (M + N + 1));
-            while(subnets[0].nodes[r] in useds || r >= i)
+            while (subnets[0].nodes[r] in useds || r >= i)
                 r = Math.floor((Math.random() * (M + N)) % (M + N + 1));
             useds.push(subnets[0].nodes[r]);
-            subnets[0].links.push({source: i, target: r, value: 10, is_bad: false});
+            subnets[0].links.push({ source: i, target: r, value: 10, is_bad: false });
         }
     }
 
 
     let simulation = d3.forceSimulation()
-        .force("link", d3.forceLink().id(function(d) { return d.id; }).strength(0).distance(100))
+        .force("link", d3.forceLink().id(function (d) { return d.id; }).strength(0).distance(100))
         .force("chcenterarge", d3.forceManyBody())
         .force("", d3.forceCenter(width / 2, height / 2))
         .force("collision", d3.forceCollide(function (d) { return d.power; }))
@@ -185,8 +182,7 @@
         d3.select(this).attr("fill", "#FFCC33");
         d.is_attacked = true;
         subnets[0].links.forEach(function (item, index, array) {
-            if(item.target.id === d.id)
-            {
+            if (item.target.id === d.id) {
                 item.is_bad = true;
                 d3.selectAll('#link' + item.source.id + 'to' + item.target.id).remove();
                 // .attr("style", "display:none;");
@@ -199,11 +195,9 @@
         });
         let cnt = 0;
         subnets[0].nodes.forEach(function (item, index, array) {
-            if(cnt < 2 && item.is_attacked && item !== d)
-            {
-                if(Math.random() < 0.33)
-                {
-                    subnets[0].links.push({source: d, target: item, value: 10, is_bad: false});
+            if (cnt < 2 && item.is_attacked && item !== d) {
+                if (Math.random() < 0.33) {
+                    subnets[0].links.push({ source: d, target: item, value: 10, is_bad: false });
                     simulation.force("link")
                         .links(subnets[0].links);
                     svg.selectAll('g.links')
@@ -241,5 +235,4 @@
     function mouseout(d, i) {
         d3.select(this).attr("fill", nodeColor[i]/*"#A6ECAB"*/);
     }
-
 </script>
