@@ -14,6 +14,7 @@
 
 </style>
 <svg width="960" height="600"></svg>
+<table id="table"></table>
 <script src="script/d3.v4.js"></script>
 <script>
 
@@ -22,6 +23,8 @@
         height = +svg.attr("height");
 
     var color = d3.scaleOrdinal(d3.schemeCategory20);
+
+    var listTable = {}
 
     //subnets:[
     //  {id: [String], nodes: [Array], links: [Array]}
@@ -49,7 +52,7 @@
     // link
     for(let i = 0; i < M + N; i++){
         let aUsed = [];
-        for(let j = 0; j < 8; j++){
+        for(let j = 0; j < 2; j++){
             let r = Math.floor((Math.random() * (M + N)) % (M + N + 1));
             while(graph.nodes[r] in aUsed || r === i)	r = Math.floor((Math.random() * (M + N)) % (M + N + 1));
             aUsed.push(graph.nodes[r]);
