@@ -60,14 +60,10 @@
 
     var nodeColor = new Array(48)
 
-    var graphs = new Array(5);
     let M = 0;
     let N = 48;
-    for (let i = 0; i < M + N; i++) {
-        graphs.push(graph);
-    }
-
     let subnets = new Array(5);
+    
     for (let i = 0; i < 5; i++) {
         subnets[i] = {
             "nodes": [],
