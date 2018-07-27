@@ -22,8 +22,6 @@
                     <td>
                         <pre id="table"></pre>
                     </td>
-                </tr>
-                <tr>
                     <td>
                         <pre id="ip-table"></pre>
                     </td>
@@ -62,20 +60,12 @@
 
     let M = 0;
     let N = 48;
-    let subnets = new Array(5);
-    
-    for (let i = 0; i < 5; i++) {
-        subnets[i] = {
-            "nodes": [],
-            "links": []
-        };
-    }
-
 
     // node
     for (let i = 0; i < M + N; i++) {
         nodeColor[i] = "#A6ECAB";
-        subnets[0].nodes.push({ id: i, group: 0, power: Math.random() * 8 + 3, is_attacked: false });
+        listTable[String(i)] = 0;
+        graph.nodes.push({ id: i, group: 0, power: Math.random() * 8 + 3, is_attacked: false });
     }
 
     // link
@@ -83,10 +73,11 @@
         let useds = [];
         for (let j = 0; j < 4; j++) {
             let r = Math.floor((Math.random() * (M + N)) % (M + N + 1));
-            while (subnets[0].nodes[r] in useds || r >= i)
+            /*while (graph.nodes[r] in useds || r >= i)
                 r = Math.floor((Math.random() * (M + N)) % (M + N + 1));
-            useds.push(subnets[0].nodes[r]);
-            subnets[0].links.push({ source: i, target: r, value: 10, is_bad: false });
+                */
+            useds.push(JSON.parse(JSON.stringify(graph.nodes[r])));
+            graph.links.push({ source: i, target: r, value: 10, is_bad: false });
         }
     }
 
@@ -101,7 +92,7 @@
     let link = svg.append("g")
         .attr("class", "links")
         .selectAll("line")
-        .data(subnets[0].links)
+        .data(graph.links)
         .enter().append("line")
         .attr("style", function (d, i) {
             return d.is_bad ? "display:none;" : "display:block;stroke:#B7E7F5";
@@ -113,7 +104,7 @@
     let node = svg.append("g")
         .attr("class", "nodes")
         .selectAll("circle")
-        .data(subnets[0].nodes)
+        .data(graph.nodes)
         .enter().append("circle")
         .attr("r", function (d, i) {
             return d.power;
@@ -123,19 +114,19 @@
         })
         .attr("id", function (d) { return 'node' + d.id; })
         .on("click", beAttacked)
-        // .on("mouseover", mouseover)
-        // .on("mouseout", mouseout)
+        .on("mouseover", mouseover)
+        .on("mouseout", mouseout)
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
             .on("end", dragended));
 
     simulation
-        .nodes(subnets[0].nodes)
+        .nodes(graph.nodes)
         .on("tick", ticked);
 
     simulation.force("link")
-        .links(subnets[0].links);
+        .links(graph.links);
 
     function ticked() {
         link
@@ -174,28 +165,46 @@
 
     function beAttacked(d, i) {
         if (d.is_attacked) return;
+        let positive = Math.random() < 0.50;
+        let source = String(-Math.floor(Math.random() * 8 + 1))
+        if (positive) {
+            listTable[source] = (listTable[source] || 0) - 1;
+            return;
+        } else {
+            let keys = Object.keys(listTable)
+            let cnt = 0
+            listTable[source] = (listTable[source] || 0)
+            for (let i = 0; i < keys.length; i++) {
+                if (listTable[i] > listTable[source]) {
+                    cnt++
+                }
+            }
+            if (cnt >= 40) {
+                return;
+            }
+        }
         nodeColor[i] = "#FFCC33";
         d3.select(this).attr("fill", "#FFCC33");
-        d.is_attacked = true;
-        subnets[0].links.forEach(function (item, index, array) {
+        d.is_attacked = source;
+        graph.links.forEach(function (item, index, array) {
             if (item.target.id === d.id) {
                 item.is_bad = true;
                 d3.selectAll('#link' + item.source.id + 'to' + item.target.id).remove();
                 // .attr("style", "display:none;");
                 array.splice(index, 1);
                 simulation.force("link")
-                    .links(subnets[0].links);
+                    .links(graph.links);
                 // simulation.force("center", d3.forceCenter(0, 0));
                 simulation.restart();
             }
         });
         let cnt = 0;
-        subnets[0].nodes.forEach(function (item, index, array) {
+        graph.nodes.forEach(function (item, index, array) {
             if (cnt < 2 && item.is_attacked && item !== d) {
                 if (Math.random() < 0.33) {
-                    subnets[0].links.push({ source: d, target: item, value: 10, is_bad: false });
+                    graph.links.push({ source: d, target: item, value: 10, is_bad: false });
                     simulation.force("link")
-                        .links(subnets[0].links);
+                        .links(graph.links);
                     svg.selectAll('g.links')
                         .append('line')
                         .datum({ source: d, target: item, value: 10, is_bad: false })
@@ -225,10 +234,24 @@
                 links += `${i} <-- ${graph.links[_i].source.id}\n`
             }
         }
-        $("#table").text("结点：" + i + " / " + (is_attacked ? "被攻击" : "未被攻击") + "\n" + links);
+        $("#table").text("结点：" + i + " / " + (is_attacked ? `被攻击: 攻击者${node_info.is_attacked}` : "未被攻击") + "\n" + links);
     }
 
     function mouseout(d, i) {
         d3.select(this).attr("fill", nodeColor[i]/*"#A6ECAB"*/);
     }
+
+    function miner() {
+        let ip = String(Math.floor(Math.random() * 48));
+    }
+
+    setInterval(function () {
+        let str = "";
+        let keys = Object.keys(listTable)
+        for (let i = 0; i < keys.length; i++) {
+            console.log(keys[i])
+            str = str + (`${keys[i]} : ${listTable[keys[i]]}` + (i % 3 == 2 ? "\n" : "\t"));
+        }
+        $("#ip-table").text(str)
+    }, 3000)
 </script>
