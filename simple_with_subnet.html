@@ -12,11 +12,17 @@
         stroke-width: 1.5px;
     }
 
+    .texts text{
+        color: #328FF9;
+        font: bold 10px sans-serif
+    }
+
 </style>
 <table>
     <tr>
         <td>
             <svg width="960" height="600"></svg>
+            <div style="text-align: center;"><button onclick="expand()">Expand</button></div>
         </td>
         <td>
             <table>
@@ -34,6 +40,7 @@
         </td>
     </tr>
 </table>
+<!--<button onclick="shrink()">Shrink</button>-->
 <script src="script/d3.v4.js"></script>
 <script src="script/jquery.min.js"></script>
 <script>
@@ -44,10 +51,8 @@
 
     let color = d3.scaleOrdinal(d3.schemeCategory20);
 
-    let listTable = {}
-
     //subnets:[
-    //  {id: [String], nodes: [Array], links: [Array]}
+    //  {nodes: [Array], links: [Array]}
     // ]
     //nodes:[
     //  {id: [String], group: [Number], power: [Number], is_attacked: [Boolean]}
@@ -55,111 +60,188 @@
     //links:[
     //  {source: [String], target: [String], value: [Number], is_bad: [Boolean]}
     // ]
-    let graph = {
-        "nodes": [],
-        "links": []
-    };
 
-    let M = 0;
-    let N = 48;
+    const M = 0;
+    const N = 48;
+    const SUBNET_NUM = 7;
 
-    var nodeColor = new Array(48)
+    let nodeColor = new Array(48);
 
-    var graphs = new Array(5);
-    let M = 0;
-    let N = 48;
-    for (let i = 0; i < M + N; i++) {
-        graphs.push(graph);
-    }
-
-    let subnets = new Array(5);
-    for (let i = 0; i < 5; i++) {
+    // 0: all nodes
+    // 1: keypoints net
+    // 2: center
+    // 3: left up
+    // 4: right up
+    // 5: left down
+    // 6: right down
+    let subnets = new Array(SUBNET_NUM);
+    for (let i = 0; i < SUBNET_NUM; i++)
+    {
         subnets[i] = {
             "nodes": [],
             "links": []
         };
     }
 
+    // node
+    for (let i = 0; i < M + N; i++)
+    {
+        nodeColor[i] = "#A6ECAB";
+        subnets[0].nodes.push({id: i, group: 0, power: Math.random() * 10 + 5, is_attacked: false});
+    }
 
-        // node
-        for (let i = 0; i < M + N; i++) {
-            nodeColor[i] = "#A6ECAB";
-            subnets[0].nodes.push({id: i, group: 0, power: Math.random() * 8 + 3, is_attacked: false});
-        }
-
-        // link
-        for (let i = 0; i < M + N; i++) {
-            let useds = [];
-            for (let j = 0; j < 4; j++) {
-                let r = Math.floor((Math.random() * (M + N)) % (M + N + 1));
-                while (subnets[0].nodes[r] in useds || r === i)
-                    r = Math.floor((Math.random() * (M + N)) % (M + N + 1));
-                useds.push(subnets[0].nodes[r]);
-                subnets[0].links.push({source: i, target: r, value: 10, is_bad: false});
+    let point_num = [10, 13, 5, 8, 7, 5];
+    let point_base = [0, 10, 23, 28, 36, 43];
+    {
+        let node_idx = 0;
+        point_num.forEach(function (d, index) {
+            for(let i = 0; i < d; i++, node_idx++)
+            {
+                subnets[index + 1].nodes.push(subnets[0].nodes[node_idx]);
             }
-        }
+        });
+    }
+
     // link
-    for (let i = 0; i < M + N; i++) {
-        let useds = [];
-        for (let j = 0; j < 4; j++) {
-            let r = Math.floor((Math.random() * (M + N)) % (M + N + 1));
-            while (subnets[0].nodes[r] in useds || r >= i)
+    // for (let i = 0; i < M + N; i++) {
+    //     let _node_ids = []; // ids linked
+    //     for (let j = 0; j < 4; j++) {
+    //         let r = Math.floor((Math.random() * (M + N)) % (M + N + 1));    // expected id
+    //         while (_node_ids.indexOf(r) !== -1 || r === i)
+    //         {
+    //             r = Math.floor((Math.random() * (M + N)) % (M + N + 1));
+    //             // console.log('----I\'m in while.' + ' i = ' + i + ', r = ' + r);
+    //             // console.log(_node_ids);
+    //         }
+    //         _node_ids.push(subnets[0].nodes[r].id);
+    //         subnets[0].links.push({ source: i, target: r, value: 10, is_bad: false });
+    //         // console.log(i + '-->' + r);
+    //     }
+    // }
+
+    for (let i = 0; i < point_num[0]; i++)
+    {
+        let node_idx = []; // ids linked
+        for (let j = 0; j < 8; j++) {
+            let r = Math.floor((Math.random() * (M + N)) % (M + N + 1));    // expected id
+            while (node_idx.indexOf(r) !== -1 || r === i)
+            {
                 r = Math.floor((Math.random() * (M + N)) % (M + N + 1));
-            useds.push(subnets[0].nodes[r]);
-            subnets[0].links.push({ source: i, target: r, value: 10, is_bad: false });
+            }
+            node_idx.push(subnets[0].nodes[r].id);
+            subnets[1].links.push({ source: i, target: r, value: 10, is_bad: false });
         }
     }
 
+    for(let netid = 2; netid < SUBNET_NUM; netid++)
+    {
+        for (let i = 0; i < point_num[netid - 1]; i++)
+        {
+            let node_idx = [];
+            for(let j = 0; j < 4; j++)
+            {
+                let r = Math.floor((Math.random() * (point_num[netid - 1])) % (point_num[netid - 1] + 1));    // expected id
+                while (node_idx.indexOf(r) !== -1 || r === i)
+                {
+                    r = Math.floor((Math.random() * (point_num[netid - 1])) % (point_num[netid - 1] + 1));
+                }
+                node_idx.push(subnets[0].nodes[r].id);
+                subnets[netid].links.push({ source: i + point_base[netid - 1], target: r + point_base[netid - 1], value: 10, is_bad: false });
+            }
+        }
+    }
 
-    let simulation = d3.forceSimulation()
-        .force("link", d3.forceLink().id(function (d) { return d.id; }).strength(0).distance(100))
-        .force("chcenterarge", d3.forceManyBody())
-        .force("", d3.forceCenter(width / 2, height / 2))
-        .force("collision", d3.forceCollide(function (d) { return d.power; }))
-        .force("radial", d3.forceRadial(Math.min(width, height) / 6, width / 2, height / 2));
+    for(let i = 1; i < SUBNET_NUM; i++)
+    {
+        subnets[0].links = subnets[0].links.concat(subnets[i].links);
+    }
 
-        let link = svg.append("g")
-            .attr("class", "links")
-            .selectAll("line")
-            .data(subnets[0].links)
-            .enter().append("line")
-            .attr("style", function (d, i) {
-                return d.is_bad ? "display:none;" : "display:block;stroke:#B7E7F5";
-            })
-            .attr("id", function (d, i) {
-                return 'link' + d.source + 'to' + d.target;
-            });
+    let simulations = new Array(SUBNET_NUM);
 
-        let node = svg.append("g")
-            .attr("class", "nodes")
-            .selectAll("circle")
-            .data(subnets[0].nodes)
-            .enter().append("circle")
-            .attr("r", function (d, i) {
-                return d.power;
-            })
-            .attr("fill", function (d, i) {
-                return d.is_attacked ? "#FFCC33" : "#A6ECAB";
-            })
-            .attr("id", function (d) {
-                return 'node' + d.id;
-            })
-            .on("click", beAttacked)
-            // .on("mouseover", mouseover)
-            // .on("mouseout", mouseout)
-            .call(d3.drag()
-                .on("start", dragstarted)
-                .on("drag", dragged)
-                .on("end", dragended));
+    let subnet_circle = [
+        {x: width / 2, y: height / 2, radius: Math.min(width, height) / 5}, // all nodes
+        {x: width / 2, y: height / 2, radius: Math.min(width, height) / 5}, // subnet 1 (keypoint net)
+        {x: width / 2, y: height / 2, radius: Math.min(width, height) / 20},    // subnet 4
+        {x: width / 4, y: height / 4, radius: Math.min(width, height) / 10},    // subnet 2
+        {x: width * 3 / 4, y: height / 4, radius: Math.min(width, height) / 10},    // subnet 3
+        {x: width / 4, y: height * 3 / 4, radius: Math.min(width, height) / 10},    // subnet 5
+        {x: width * 3 / 4, y: height * 3 / 4, radius: Math.min(width, height) / 10} // subnet 6
+    ];
 
-    simulation
-        .nodes(subnets[0].nodes)
-        .on("tick", ticked);
 
-    simulation.force("link")
-        .links(subnets[0].links);
+    for(let i = 0; i < SUBNET_NUM; i++)
+    {
+        simulations[i] = d3.forceSimulation()
+            .force("link", d3.forceLink().id(function (d) { return d.id; }).strength(0).distance(100))
+            .force("charge", d3.forceManyBody())
+            .force("center", d3.forceCenter(subnet_circle[i].x, subnet_circle[i].y))
+            .force("collision", d3.forceCollide(function (d) { return d.power; }))
+            .force("radial", d3.forceRadial(subnet_circle[i].radius, subnet_circle[i].x, subnet_circle[i].y))
+            .stop();
 
-    function ticked() {
+        simulations[i]
+            .nodes(subnets[i].nodes)
+            .on('tick', ticked);
+
+        simulations[i].force('link')
+            .links(subnets[i].links);
+    }
+
+    // let simulation = d3.forceSimulation()
+    //     .force("link", d3.forceLink().id(function (d) { return d.id; }).strength(0).distance(100))
+    //     .force("charge", d3.forceManyBody())
+    //     .force("", d3.forceCenter(width / 2, height / 2))
+    //     .force("collision", d3.forceCollide(function (d) { return d.power; }))
+    //     .force("radial", d3.forceRadial(Math.min(width, height) / 6, width / 2, height / 2));
+
+    simulations[0].restart();
+    // for(let i = 1; i < SUBNET_NUM; i++)
+    // {
+    //     simulations[i].restart();
+    // }
+
+    let link = svg.append("g")
+        .attr("class", "links")
+        .selectAll("line")
+        .data(subnets[0].links)
+        .enter().append("line")
+        .attr("style", function (d, i) {
+            return d.is_bad ? "display:block;stroke:#FFCC33;" : "display:block;stroke:#B7E7F5";
+        })
+        .attr("id", function (d, i) {
+            return 'link' + d.source.id + 'to' + d.target.id;
+        });
+
+    let node = svg.append("g")
+        .attr("class", "nodes")
+        .selectAll("circle")
+        .data(subnets[0].nodes)
+        .enter().append("circle")
+        .attr("r", function (d, i) { return d.power; })
+        .attr("fill", function (d, i) { return d.is_attacked ? "#FFCC33" : "#A6ECAB"; })
+        .attr("id", function (d) { return 'node' + d.id; })
+        .on("click", beAttacked)
+        .on("mouseover", mouseover)
+        .on("mouseout", mouseout)
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended));
+
+    let text = svg.append("g")
+        .attr("class", "texts")
+        .selectAll("text")
+        .data(subnets[0].nodes)
+        .enter().append("text")
+        .attr("id", function (d) { return 'node_text' + d.id; })
+        .text(function (d, i) { return d.id; })
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended));
+
+    function ticked()
+    {
         link
             .attr("x1", function (d) { return d.source.x; })
             .attr("y1", function (d) { return d.source.y; })
@@ -170,6 +252,10 @@
             .attr("cx", function (d) { return d.x; })
             .attr("cy", function (d) { return d.y; });
 
+        text
+            .attr("x", function (d) { return d.x; })
+            .attr("y", function (d) { return d.y; });
+
         svg.selectAll('g.links').selectAll('line')
             .attr("x1", function (d) { return d.source.x; })
             .attr("y1", function (d) { return d.source.y; })
@@ -177,81 +263,259 @@
             .attr("y2", function (d) { return d.target.y; });
     }
 
-    function dragstarted(d) {
-        if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+    function dragstarted(d)
+    {
+        if (!d3.event.active)
+        {
+            for(let i = 1; i < SUBNET_NUM; i++)
+            {
+                simulations[i].alphaTarget(0.3).restart();
+            }
+        }
         d.fx = d.x;
         d.fy = d.y;
     }
 
-    function dragged(d) {
+    function dragged(d)
+    {
         d.fx = d3.event.x;
         d.fy = d3.event.y;
     }
 
-    function dragended(d) {
-        if (!d3.event.active) simulation.alphaTarget(0);
+    function dragended(d)
+    {
+        if (!d3.event.active)
+        {
+
+            for(let i = 1; i < SUBNET_NUM; i++)
+            {
+                simulations[i].alphaTarget(0);
+            }
+        }
         d.fx = null;
         d.fy = null;
     }
 
-    function beAttacked(d, i) {
+    let decay_handle;
+    let is_decay_begin = false;
+    function beAttacked(d, i)
+    {
         if (d.is_attacked) return;
         nodeColor[i] = "#FFCC33";
         d3.select(this).attr("fill", "#FFCC33");
         d.is_attacked = true;
-        subnets[0].links.forEach(function (item, index, array) {
-            if (item.target.id === d.id) {
-                item.is_bad = true;
-                d3.selectAll('#link' + item.source.id + 'to' + item.target.id).remove();
-                // .attr("style", "display:none;");
-                array.splice(index, 1);
-                simulation.force("link")
-                    .links(subnets[0].links);
-                // simulation.force("center", d3.forceCenter(0, 0));
-                simulation.restart();
+        if(!is_decay_begin)
+        {
+            let begin_decay = true;
+            for(let i = 0; i < point_num[0]; i++)
+            {
+                if(!subnets[0].nodes[i].is_attacked)
+                    begin_decay = false;
             }
-        });
-        let cnt = 0;
-        subnets[0].nodes.forEach(function (item, index, array) {
-            if (cnt < 2 && item.is_attacked && item !== d) {
-                if (Math.random() < 0.33) {
-                    subnets[0].links.push({ source: d, target: item, value: 10, is_bad: false });
-                    simulation.force("link")
-                        .links(subnets[0].links);
-                    svg.selectAll('g.links')
-                        .append('line')
-                        .datum({ source: d, target: item, value: 10, is_bad: false })
-                        .attr("style", "display:block;stroke:#FFCB6B")
-                        .attr("id", 'link' + d.id + 'to' + item.id);
-                    simulation.restart();
-                    cnt += 1;
+            if(begin_decay)
+            {
+                decay_handle = window.setInterval(decay, 500);
+                is_decay_begin = true;
+            }
+        }
+        for(let i = 0; i < SUBNET_NUM; i++)
+        {
+            let p_links = [];
+            subnets[i].links.forEach(function (item, index, array)
+            {
+                if (item.target.id === d.id || item.source.id === d.id)
+                {
+                    item.is_bad = true;
+                    d3.selectAll('#link' + item.source.id + 'to' + item.target.id)
+                        .attr("style", "display:block;stroke:#FFCC33;");
+                    simulations[i].force("link")
+                        .links(subnets[i].links);
+                    // simulation.force("center", d3.forceCenter(0, 0));
+                    simulations[i].restart();
                 }
-            }
-        })
+                else
+                {
+                    p_links.push(item);
+                }
+            });
+            // subnets[i].links = p_links;
+        }
+
+        // let cnt = 0;
+        // for(let i = 0; i < SUBNET_NUM; i++)
+        // {
+        //     subnets[i].nodes.forEach(function (item, index, array)
+        //     {
+        //         if (cnt < 2 && item.is_attacked && item !== d)
+        //         {
+        //             if (Math.random() < 0.33)
+        //             {
+        //                 subnets[i].links.push({ source: d, target: item, value: 10, is_bad: false });
+        //                 simulations[i].force("link")
+        //                     .links(subnets[i].links);
+        //                 svg.selectAll('g.links')
+        //                     .append('line')
+        //                     .datum({ source: d, target: item, value: 10, is_bad: false })
+        //                     .attr("style", "display:block;stroke:#FFCB6B")
+        //                     .attr("id", 'link' + d.id + 'to' + item.id);
+        //                 simulations[i].restart();
+        //                 cnt += 1;
+        //             }
+        //         }
+        //     })
+        // }
+        simulations[0].stop();
     }
 
-    function mouseover(d, i) {
+    function mouseover(d, i)
+    {
         d3.select(this).attr("fill", "#FF0000");
         //alert(i)
-        var node_info = graph.nodes[i]
-        var is_attacked = false;
-        var links = "";
-        if (node_info && node_info.is_attacked) {
+        let node_info = subnets[0].nodes[i];
+        let is_attacked = false;
+        let links = "";
+        if (node_info && node_info.is_attacked)
+        {
             is_attacked = true
         }
-        for (var _i = 0; _i < graph.links.length; _i++) {
-            if (String(graph.links[_i].source.id) === String(i)) {
-                links += `${i} --> ${graph.links[_i].target.id}\n`
+        for (let _i = 0; _i < subnets[0].links.length; _i++) {
+            if (String(subnets[0].links[_i].source.id) === String(i)) {
+                links += `${i} --> ${subnets[0].links[_i].target.id}\n`
             }
-            if (String(graph.links[_i].target.id) === String(i)) {
-                links += `${i} <-- ${graph.links[_i].source.id}\n`
+            if (String(subnets[0].links[_i].target.id) === String(i)) {
+                links += `${i} <-- ${subnets[0].links[_i].source.id}\n`
             }
         }
         $("#table").text("结点：" + i + " / " + (is_attacked ? "被攻击" : "未被攻击") + "\n" + links);
     }
 
-    function mouseout(d, i) {
+    function mouseout(d, i)
+    {
         d3.select(this).attr("fill", nodeColor[i]/*"#A6ECAB"*/);
+    }
+
+    function expand()
+    {
+        simulations[0].stop();
+        for(let i = 1; i < SUBNET_NUM; i++)
+        {
+            simulations[i].restart();
+        }
+    }
+
+    function shrink()
+    {
+        simulations[0].restart();
+        for(let i = 1; i < SUBNET_NUM; i++)
+        {
+            simulations[i].stop();
+        }
+    }
+
+    // let mins = [];
+    // function decay()
+    // {
+    //     if(subnets[0].nodes.length <= mins.length + point_num[0])
+    //     {
+    //         window.clearInterval(decay_handle);
+    //         return;
+    //     }
+    //     let min_tmp = 100;  // must be larger than the maximum of power
+    //     let min_node_tmp = subnets[0].nodes[0];
+    //     subnets[0].nodes.forEach(function (d, index, array)
+    //     {
+    //         if(!d.is_attacked
+    //             && d.power < min_tmp
+    //             && mins.indexOf(d.power) === -1)
+    //         {
+    //             min_tmp = d.power;
+    //             min_node_tmp = d;
+    //         }
+    //     });
+    //     mins.push(min_tmp);
+    //     min_node_tmp.is_attacked = true;
+    //
+    //     nodeColor[min_node_tmp.id] = "#FFCC33";
+    //     d3.select('#node' + min_node_tmp.id).attr("fill", "#FFCC33");
+    //     for(let i = 0; i < SUBNET_NUM; i++)
+    //     {
+    //         let p_links = [];
+    //         subnets[i].links.forEach(function (item, index, array)
+    //         {
+    //             if (item.target.id === min_node_tmp.id || item.source.id === min_node_tmp.id)
+    //             {
+    //                 item.is_bad = true;
+    //                 d3.selectAll('#link' + item.source.id + 'to' + item.target.id)
+    //                     .attr("style", "display:block;stroke:#FFCC33;");
+    //                 simulations[i].force("link")
+    //                     .links(subnets[i].links);
+    //                 // simulation.force("center", d3.forceCenter(0, 0));
+    //                 simulations[i].restart();
+    //             }
+    //             else
+    //             {
+    //                 p_links.push(item);
+    //             }
+    //         });
+    //         // subnets[i].links = p_links;
+    //     }
+    //     simulations[0].stop();
+    // }
+
+    let filtered = [];
+    let seq_subnet = [3, 6, 5, 4, 2];
+    let cur_seq = seq_subnet[0];
+    let cur_node = 0;
+    function decay()
+    {
+        if(subnets[0].nodes.length <= filtered.length + point_num[0])
+        {
+            window.clearInterval(decay_handle);
+            return;
+        }
+        let node_tmp = subnets[cur_seq].nodes[cur_node];
+        if(filtered.indexOf(node_tmp) === -1 && !node_tmp.is_attacked)
+        {
+            node_tmp = subnets[cur_seq].nodes[cur_node];
+            filtered.push(node_tmp);
+            node_tmp.is_attacked = true;
+            nodeColor[node_tmp.id] = "#FFCC33";
+            d3.select('#node' + node_tmp.id).attr("fill", "#FFCC33");
+            for(let i = 0; i < SUBNET_NUM; i++)
+            {
+                subnets[i].links.forEach(function (item, index, array)
+                {
+                    if (item.target.id === node_tmp.id || item.source.id === node_tmp.id)
+                    {
+                        item.is_bad = true;
+                        d3.selectAll('#link' + item.source.id + 'to' + item.target.id)
+                            .attr("style", "display:block;stroke:#FFCC33;");
+                        simulations[i].force("link")
+                            .links(subnets[i].links);
+                        simulations[i].restart();
+                    }
+                });
+            }
+            simulations[0].stop();
+
+        }
+        let can_inc_seq = true;
+        for(let i = 0; i < subnets[cur_seq].nodes.length; i++)
+        {
+            if(!subnets[cur_seq].nodes[i].is_attacked)
+            {
+                can_inc_seq = false;
+            }
+        }
+        if(can_inc_seq)
+        {
+            cur_seq = seq_subnet[seq_subnet.indexOf(cur_seq) + 1];
+            cur_node = 0;
+        }
+        else
+        {
+            cur_node += 1;
+        }
     }
 
 </script>
